@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Strength Meter</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --weak: #f72585;
+            --good: #f8961e;
+            --strong: #4cc9f0;
+            --light: #e9ecef;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #212529;
+            margin-bottom: 24px;
+            font-size: 1.8rem;
+        }
+
+        .password-container {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1rem;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .password-input:focus {
+            border-color: #4361ee;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #6c757d;
+        }
+
+        .strength-meter {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .meter-circle {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .meter-bg {
+            fill: none;
+            stroke: #e9ecef;
+            stroke-width: 8;
+        }
+
+        .meter-fill {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 0 628;
+            transition: all 0.4s ease;
+        }
+
+        .meter-value {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            width: 100%;
+            text-align: center;
+        }
+
+        /* Color classes */
+        .weak .meter-fill {
+            stroke: var(--weak);
+        }
+        .good .meter-fill {
+            stroke: var(--good);
+        }
+        .strong .meter-fill {
+            stroke: var(--strong);
+        }
+
+        /* Text colors */
+        .weak-text {
+            color: var(--weak);
+        }
+        .good-text {
+            color: var(--good);
+        }
+        .strong-text {
+            color: var(--strong);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Password Strength</h1>
+        
+        <div class="password-container">
+            <input type="password" id="password" class="password-input" placeholder="Enter password" 
+                oninput="analyzePassword()" autocomplete="off">
+            <i class="fa-solid fa-eye-slash toggle-password" onclick="togglePasswordVisibility()"></i>
+        </div>
+        
+        <div class="strength-meter" id="strength-meter">
+            <svg class="meter-circle" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="90" class="meter-bg" />
+                <circle cx="100" cy="100" r="90" class="meter-fill" 
+                    stroke-dasharray="628" stroke-dashoffset="628" />
+            </svg>
+            <div class="meter-value" id="strength-label">-</div>
+        </div>
+    </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.querySelector('.toggle-password');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            }
+        }
+
+        function analyzePassword() {
+            const password = document.getElementById('password').value;
+            const meter = document.querySelector('.meter-fill');
+            const strengthMeter = document.getElementById('strength-meter');
+            const strengthLabel = document.getElementById('strength-label');
+            
+            // Reset classes
+            strengthMeter.className = 'strength-meter';
+            strengthLabel.className = 'meter-value';
+            
+            if (password.length === 0) {
+                meter.style.strokeDashoffset = '628';
+                strengthLabel.textContent = '-';
+                return;
+            }
+            
+            // Calculate strength (0-100)
+            let strength = 0;
+            
+            // Length (max 40 points)
+            strength += Math.min(password.length * 4, 40);
+            
+            // Character variety
+            if (/[A-Z]/.test(password)) strength += 15;
+            if (/\d/.test(password)) strength += 15;
+            if (/[^A-Za-z0-9]/.test(password)) strength += 20;
+            
+            // Penalty for short passwords
+            if (password.length < 8) strength = Math.max(0, strength - 20);
+            
+            // Cap at 100
+            strength = Math.min(strength, 100);
+            
+            // Update meter fill
+            meter.style.strokeDashoffset = 628 - (strength / 100 * 628);
+            
+            // Determine strength level
+            if (strength < 40) {
+                strengthMeter.classList.add('weak');
+                strengthLabel.textContent = 'WEAK';
+                strengthLabel.classList.add('weak-text');
+            } 
+            else if (strength < 75) {
+                strengthMeter.classList.add('good');
+                strengthLabel.textContent = 'GOOD';
+                strengthLabel.classList.add('good-text');
+            } 
+            else {
+                strengthMeter.classList.add('strong');
+                strengthLabel.textContent = 'STRONG';
+                strengthLabel.classList.add('strong-text');
+            }
+        }
+    </script>
+</body>
+</html>
